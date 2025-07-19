@@ -1,0 +1,105 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Checklist com Cotação</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f5f7;
+            padding: 2rem;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+        header {
+            text-align: center;
+        }
+        input, button {
+            padding: 0.6rem;
+            font-size: 1rem;
+            margin: 0.5rem;
+        }
+        section {
+            background: #fff;
+            border-left: 5px solid #d32f2f;
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 1rem;
+        }
+        .preco {
+            margin-top: 0.3rem;
+            font-size: 0.9rem;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Checklist de Compras com Cotação</h1>
+        <input type="text" id="nomeListaInput" placeholder="Digite o nome da lista">
+        <button onclick="atualizarNomeLista()">Salvar Nome</button>
+        <h2 id="nomeDaLista"></h2>
+    </header>
+
+    <section>
+        <h3>1. Ingredientes</h3>
+        <ul id="lista-produtos">
+            <!-- preenchido via JS -->
+        </ul>
+    </section>
+</div>
+
+<script>
+const produtos = ["Farinha de Trigo", "Fermento"];
+
+function atualizarNomeLista() {
+    const nome = document.getElementById("nomeListaInput").value.trim();
+    document.getElementById("nomeDaLista").textContent = nome ? `📋 Lista de Compras: ${nome}` : "";
+}
+
+async function carregarCotacoes() {
+    const ul = document.getElementById("lista-produtos");
+    for (const produto of produtos) {
+        const li = document.createElement("li");
+        li.innerHTML = \`
+            <input type="checkbox" id="check-\${produto}">
+            <label for="check-\${produto}">\${produto}</label>
+            <input type="number" placeholder="Qtd" style="width: 60px;">
+            <input type="text" placeholder="Unidade" style="width: 80px;">
+            <div class="preco" id="preco-\${produto}">🔄 Buscando preços...</div>
+        \`;
+        ul.appendChild(li);
+
+        try {
+            const res = await fetch(\`http://localhost:8000/api/cotacao?produto=\${encodeURIComponent(produto)}\`);
+            const data = await res.json();
+            if (data.length === 0) {
+                document.getElementById("preco-" + produto).textContent = "❌ Nenhum preço encontrado";
+            } else {
+                const texto = data.map(p => \`\${p.mercado}: R$ \${p.preco.toFixed(2)} / \${p.unidade}\`).join(" | ");
+                document.getElementById("preco-" + produto).textContent = "💰 " + texto;
+            }
+        } catch (e) {
+            document.getElementById("preco-" + produto).textContent = "⚠️ Erro ao buscar preços";
+        }
+    }
+}
+
+document.addEventListener("DOMContentLoaded", carregarCotacoes);
+</script>
+</body>
+</html>
